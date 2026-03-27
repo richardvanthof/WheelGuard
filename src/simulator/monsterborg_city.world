@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="city_world">
+
+    <!-- Physics -->
+    <physics type="ode">
+      <gravity>0 0 -9.8</gravity>
+    </physics>
+
+    <!-- Sun -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- Asphalt road -->
+    <model name="road">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>20 6 0.01</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>20 6 0.01</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.1 0.1 0.1 1</ambient>
+            <diffuse>0.2 0.2 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Buildings -->
+    <model name="building_1">
+      <static>true</static>
+      <pose>5 5 1 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>3 3 2</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3 3 2</size>
+            </box>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <model name="building_2">
+      <static>true</static>
+      <pose>-5 -4 1 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>4 2 3</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>4 2 3</size>
+            </box>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Street lights -->
+    <light name="street_light" type="point">
+      <pose>0 0 3 0 0 0</pose>
+      <diffuse>1 1 0.8 1</diffuse>
+      <attenuation>
+        <range>20</range>
+      </attenuation>
+    </light>
+
+    <!-- Spawn MonsterBorg -->
+    <include>
+      <uri>model://monsterborg</uri>
+      <pose>0 0 0.2 0 0 0</pose>
+    </include>
+
+  </world>
+</sdf>

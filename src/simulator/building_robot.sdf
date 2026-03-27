@@ -1,0 +1,599 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+    <world name="sensor_world">
+        <physics name="1ms" type="ignored">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+        </physics>
+        <plugin
+            filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics">
+        </plugin>
+        <plugin
+            filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin
+            filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+        <plugin
+            filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu">
+        </plugin>
+        <plugin
+            filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+        <plugin
+            filename="gz-sim-contact-system"
+            name="gz::sim::systems::Contact">
+        </plugin>
+        <gui fullscreen="0">
+
+          <!-- 3D scene -->
+          <plugin filename="MinimalScene" name="3D View">
+            <gz-gui>
+              <title>3D View</title>
+              <property type="bool" key="showTitleBar">false</property>
+              <property type="string" key="state">docked</property>
+            </gz-gui>
+
+            <engine>ogre2</engine>
+            <scene>scene</scene>
+            <ambient_light>0.4 0.4 0.4</ambient_light>
+            <background_color>0.8 0.8 0.8</background_color>
+            <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+            <camera_clip>
+              <near>0.25</near>
+              <far>25000</far>
+            </camera_clip>
+          </plugin>
+
+          <!-- Plugins that add functionality to the scene -->
+          <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
+            <gz-gui>
+              <property key="state" type="string">floating</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="GzSceneManager" name="Scene Manager">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="InteractiveViewControl" name="Interactive view control">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="CameraTracking" name="Camera Tracking">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="MarkerManager" name="Marker manager">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="SelectEntities" name="Select Entities">
+            <gz-gui>
+              <anchors target="Select entities">
+                <line own="right" target="right"/>
+                <line own="top" target="top"/>
+              </anchors>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+          <plugin filename="VisualizationCapabilities" name="Visualization Capabilities">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+
+          <plugin filename="Spawn" name="Spawn Entities">
+            <gz-gui>
+              <anchors target="Select entities">
+                <line own="right" target="right"/>
+                <line own="top" target="top"/>
+              </anchors>
+              <property key="resizable" type="bool">false</property>
+              <property key="width" type="double">5</property>
+              <property key="height" type="double">5</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- World control -->
+          <plugin filename="WorldControl" name="World control">
+            <gz-gui>
+              <title>World control</title>
+              <property type="bool" key="showTitleBar">false</property>
+              <property type="bool" key="resizable">false</property>
+              <property type="double" key="height">72</property>
+              <property type="double" key="width">121</property>
+              <property type="double" key="z">1</property>
+
+              <property type="string" key="state">floating</property>
+              <anchors target="3D View">
+                <line own="left" target="left"/>
+                <line own="bottom" target="bottom"/>
+              </anchors>
+            </gz-gui>
+
+            <play_pause>true</play_pause>
+            <step>true</step>
+            <start_paused>true</start_paused>
+            <use_event>true</use_event>
+
+          </plugin>
+
+          <!-- World statistics -->
+          <plugin filename="WorldStats" name="World stats">
+            <gz-gui>
+              <title>World stats</title>
+              <property type="bool" key="showTitleBar">false</property>
+              <property type="bool" key="resizable">false</property>
+              <property type="double" key="height">110</property>
+              <property type="double" key="width">290</property>
+              <property type="double" key="z">1</property>
+
+              <property type="string" key="state">floating</property>
+              <anchors target="3D View">
+                <line own="right" target="right"/>
+                <line own="bottom" target="bottom"/>
+              </anchors>
+            </gz-gui>
+
+            <sim_time>true</sim_time>
+            <real_time>true</real_time>
+            <real_time_factor>true</real_time_factor>
+            <iterations>true</iterations>
+          </plugin>
+
+          <!-- Insert simple shapes -->
+          <plugin filename="Shapes" name="Shapes">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="x" type="double">0</property>
+              <property key="y" type="double">0</property>
+              <property key="width" type="double">250</property>
+              <property key="height" type="double">50</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+              <property key="cardBackground" type="string">#666666</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- Insert lights -->
+          <plugin filename="Lights" name="Lights">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="x" type="double">250</property>
+              <property key="y" type="double">0</property>
+              <property key="width" type="double">150</property>
+              <property key="height" type="double">50</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+              <property key="cardBackground" type="string">#666666</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- Translate / rotate -->
+          <plugin filename="TransformControl" name="Transform control">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="x" type="double">0</property>
+              <property key="y" type="double">50</property>
+              <property key="width" type="double">250</property>
+              <property key="height" type="double">50</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+              <property key="cardBackground" type="string">#777777</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- Screenshot -->
+          <plugin filename="Screenshot" name="Screenshot">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="x" type="double">250</property>
+              <property key="y" type="double">50</property>
+              <property key="width" type="double">50</property>
+              <property key="height" type="double">50</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+              <property key="cardBackground" type="string">#777777</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- Video recorder -->
+          <plugin filename="VideoRecorder" name="VideoRecorder">
+            <gz-gui>
+              <property key="resizable" type="bool">false</property>
+              <property key="x" type="double">300</property>
+              <property key="y" type="double">50</property>
+              <property key="width" type="double">50</property>
+              <property key="height" type="double">50</property>
+              <property key="state" type="string">floating</property>
+              <property key="showTitleBar" type="bool">false</property>
+              <property key="cardBackground" type="string">#777777</property>
+            </gz-gui>
+
+            <record_video>
+              <use_sim_time>true</use_sim_time>
+              <lockstep>false</lockstep>
+              <bitrate>4000000</bitrate>
+            </record_video>
+          </plugin>
+
+          <!-- Inspector -->
+          <plugin filename="ComponentInspector" name="Component inspector">
+            <gz-gui>
+              <property type="string" key="state">docked_collapsed</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- Entity tree -->
+          <plugin filename="EntityTree" name="Entity tree">
+            <gz-gui>
+              <property type="string" key="state">docked_collapsed</property>
+            </gz-gui>
+          </plugin>
+
+          <!-- View angle -->
+          <plugin filename="ViewAngle" name="View angle">
+            <gz-gui>
+              <property type="string" key="state">docked_collapsed</property>
+            </gz-gui>
+          </plugin>
+
+            <!-- KeyPublisher plugin-->
+            <plugin filename="KeyPublisher" name="Key Publisher"/>
+
+        </gui>
+
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+
+        <model name="ground_plane">
+            <static>true</static>
+            <link name="link">
+                <collision name="collision">
+                <geometry>
+                    <plane>
+                    <normal>0 0 1</normal>
+                    </plane>
+                </geometry>
+                </collision>
+                <visual name="visual">
+                <geometry>
+                    <plane>
+                    <normal>0 0 1</normal>
+                    <size>100 100</size>
+                    </plane>
+                </geometry>
+                <material>
+                    <ambient>0.8 0.8 0.8 1</ambient>
+                    <diffuse>0.8 0.8 0.8 1</diffuse>
+                    <specular>0.8 0.8 0.8 1</specular>
+                </material>
+                </visual>
+            </link>
+        </model>
+
+        
+        <model name='monsterborg'>
+            <pose>2 0 0.3 0 0 0</pose>
+
+            <!-- Base -->
+            <link name='base_link'>
+                <inertial>
+                    <mass>6.0</mass>
+                    <inertia>
+                        <ixx>0.25</ixx>
+                        <iyy>0.35</iyy>
+                        <izz>0.45</izz>
+                    </inertia>
+                </inertial>
+
+                <visual name='visual'>
+                    <geometry>
+                        <box>
+                            <size>0.35 0.25 0.1</size>
+                        </box>
+                    </geometry>
+                    <material>
+                        <ambient>0.2 0.2 0.2 1</ambient>
+                        <diffuse>0.3 0.3 0.3 1</diffuse>
+                    </material>
+                </visual>
+
+                <collision name='collision'>
+                    <geometry>
+                        <box>
+                            <size>0.35 0.25 0.1</size>
+                        </box>
+                    </geometry>
+                </collision>
+            </link>
+
+            <!-- Wheels -->
+            <!-- Front Left -->
+            <link name='wheel_fl'>
+                <pose>0.15 0.15 -0.03 0 1.57 0</pose>
+                <inertial><mass>0.5</mass></inertial>
+                <visual name='visual'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </visual>
+                <collision name='collision'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+            </link>
+
+            <!-- Front Right -->
+            <link name='wheel_fr'>
+                <pose>0.15 -0.15 -0.03 0 1.57 0</pose>
+                <inertial><mass>0.5</mass></inertial>
+                <visual name='visual'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </visual>
+                <collision name='collision'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+            </link>
+
+            <!-- Rear Left -->
+            <link name='wheel_rl'>
+                <pose>-0.15 0.15 -0.03 0 1.57 0</pose>
+                <inertial><mass>0.5</mass></inertial>
+                <visual name='visual'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </visual>
+                <collision name='collision'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+            </link>
+
+            <!-- Rear Right -->
+            <link name='wheel_rr'>
+                <pose>-0.15 -0.15 -0.03 0 1.57 0</pose>
+                <inertial><mass>0.5</mass></inertial>
+                <visual name='visual'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </visual>
+                <collision name='collision'>
+                    <geometry>
+                        <cylinder>
+                            <radius>0.06</radius>
+                            <length>0.04</length>
+                        </cylinder>
+                    </geometry>
+                </collision>
+            </link>
+
+            <!-- Joints -->
+            <joint name='joint_fl' type='revolute'>
+                <parent>base_link</parent>
+                <child>wheel_fl</child>
+                <axis><xyz>0 1 0</xyz></axis>
+            </joint>
+
+            <joint name='joint_fr' type='revolute'>
+                <parent>base_link</parent>
+                <child>wheel_fr</child>
+                <axis><xyz>0 1 0</xyz></axis>
+            </joint>
+
+            <joint name='joint_rl' type='revolute'>
+                <parent>base_link</parent>
+                <child>wheel_rl</child>
+                <axis><xyz>0 1 0</xyz></axis>
+            </joint>
+
+            <joint name='joint_rr' type='revolute'>
+                <parent>base_link</parent>
+                <child>wheel_rr</child>
+                <axis><xyz>0 1 0</xyz></axis>
+            </joint>
+
+            <!-- Diff drive (4-wheel grouped) -->
+            <plugin filename="gz-sim-diff-drive-system"
+                    name="gz::sim::systems::DiffDrive">
+
+                <left_joint>joint_fl</left_joint>
+                <left_joint>joint_rl</left_joint>
+
+                <right_joint>joint_fr</right_joint>
+                <right_joint>joint_rr</right_joint>
+
+                <wheel_separation>0.30</wheel_separation>
+                <wheel_radius>0.06</wheel_radius>
+
+                <topic>cmd_vel</topic>
+                <odom_publish_frequency>50</odom_publish_frequency>
+            </plugin>
+
+        </model>
+        
+
+        <!--wall-->
+        <model name='wall'>
+            <static>true</static>
+            <pose>5 0 0 0 0 0</pose><!--pose relative to the world-->
+            <link name='box'>
+                <pose/>
+                <inertial> <!--inertial properties of the link mass, inertia matix-->
+                    <mass>1.14395</mass>
+                    <inertia>
+                        <ixx>9.532917</ixx>
+                        <ixy>0</ixy>
+                        <ixz>0</ixz>
+                        <iyy>0.023832</iyy>
+                        <iyz>0</iyz>
+                        <izz>9.556749</izz>
+                    </inertia>
+                </inertial>
+                <visual name='visual'>
+                    <geometry>
+                        <box>
+                            <size>0.5 10.0 2.0</size>
+                        </box>
+                    </geometry>
+                    <!--let's add color to our link-->
+                    <material>
+                        <ambient>0.0 0.0 1.0 1</ambient>
+                        <diffuse>0.0 0.0 1.0 1</diffuse>
+                        <specular>0.0 0.0 1.0 1</specular>
+                    </material>
+                </visual>
+                <collision name='collision'> <!--todo: describe why we need the collision-->
+                    <geometry>
+                        <box>
+                            <size>0.5 10.0 2.0</size>
+                        </box>
+                    </geometry>
+                </collision>
+                <sensor name='sensor_contact' type='contact'>
+                    <contact>
+                        <collision>collision</collision>
+                    </contact>
+                </sensor>
+            </link>
+            <plugin filename="gz-sim-touchplugin-system"
+                    name="gz::sim::systems::TouchPlugin">
+                <target>vehicle_blue</target>
+                <namespace>wall</namespace>
+                <time>0.001</time>
+                <enabled>true</enabled>
+            </plugin>
+        </model>
+
+        <!-- Moving Left-->
+        <plugin filename="gz-sim-triggered-publisher-system"
+                name="gz::sim::systems::TriggeredPublisher">
+            <input type="gz.msgs.Int32" topic="/keyboard/keypress">
+                <match field="data">16777234</match>
+            </input>
+            <output type="gz.msgs.Twist" topic="/cmd_vel">
+                linear: {x: 0.0}, angular: {z: 0.5}
+            </output>
+        </plugin>
+        <!-- Moving Forward-->
+        <plugin filename="gz-sim-triggered-publisher-system"
+                name="gz::sim::systems::TriggeredPublisher">
+            <input type="gz.msgs.Int32" topic="/keyboard/keypress">
+                <match field="data">16777235</match>
+            </input>
+            <output type="gz.msgs.Twist" topic="/cmd_vel">
+                linear: {x: 0.5}, angular: {z: 0.0}
+            </output>
+        </plugin>
+        <!-- Moving Right-->
+        <plugin filename="gz-sim-triggered-publisher-system"
+                name="gz::sim::systems::TriggeredPublisher">
+            <input type="gz.msgs.Int32" topic="/keyboard/keypress">
+                <match field="data">16777236</match>
+            </input>
+            <output type="gz.msgs.Twist" topic="/cmd_vel">
+                linear: {x: 0.0}, angular: {z: -0.5}
+            </output>
+        </plugin>
+        <!-- Moving Backward-->
+        <plugin filename="gz-sim-triggered-publisher-system"
+                name="gz::sim::systems::TriggeredPublisher">
+            <input type="gz.msgs.Int32" topic="/keyboard/keypress">
+                <match field="data">16777237</match>
+            </input>
+            <output type="gz.msgs.Twist" topic="/cmd_vel">
+                linear: {x: -0.5}, angular: {z: 0.0}
+            </output>
+        </plugin>
+
+        <!--stop when hit the wall-->
+        <plugin filename="gz-sim-triggered-publisher-system"
+                name="gz::sim::systems::TriggeredPublisher">
+            <input type="gz.msgs.Boolean" topic="/wall/touched">
+                <match>data: true</match>
+            </input>
+            <output type="gz.msgs.Twist" topic="/cmd_vel">
+                linear: {x: 0.0}, angular: {z: 0.0}
+            </output>
+        </plugin>
+    </world>
+</sdf>
