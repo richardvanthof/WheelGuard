@@ -1,3 +1,49 @@
 Tasks to be done in any order:
 
 - Connect to the monster borg with a screen and mouse / keyboard, and get ssh / remote network set up so you can connect with realvnc or ssh (ssh easier and then with vscode)
+- Charge battery monster borg
+- Find a way to have this file auto run on borg start 
+
+
+Password monster borg unix is wheelguard
+
+MonsterBorg Needs:
+- Python 3
+- Flask
+- MonsterBorg Library
+
+We expose endpoints such as
+POST /forward
+POST /backward
+POST /left
+POST /right
+POST /stop
+
+
+
+openssl req -x509 -newkey rsa:4096 \
+-keyout key.pem \
+-out cert.pem \
+-days 365 -nodes
+
+app.run(
+    host="0.0.0.0",
+    port=8443,
+    ssl_context=("cert.pem", "key.pem")
+)
+
+pip install flask waitress
+
+Example forward request
+
+Run like
+export ROBOT_API_KEY="supersecret"
+python app.py
+
+requests
+curl -X POST http://ROBOT_IP:8443/drive \
+-H "Content-Type: application/json" \
+-H "X-API-Key: supersecret" \
+-d '{"left":0.5,"right":0.5}'
+
+curl http://ROBOT_IP:8443/health for health check
