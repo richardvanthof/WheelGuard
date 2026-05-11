@@ -1,0 +1,28 @@
+MonsterBorg Needs:
+- Python 3
+- Flask
+- MonsterBorg Library
+
+We expose endpoints such as
+POST /forward
+POST /backward
+POST /left
+POST /right
+POST /stop
+
+
+
+openssl req -x509 -newkey rsa:4096 \
+-keyout key.pem \
+-out cert.pem \
+-days 365 -nodes
+
+app.run(
+    host="0.0.0.0",
+    port=8443,
+    ssl_context=("cert.pem", "key.pem")
+)
+
+pip install flask waitress
+
+Example forward request
