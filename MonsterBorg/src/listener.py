@@ -1,7 +1,11 @@
+import sys
+sys.path.append("/home/pi/monsterborg")
+
 from flask import Flask, request, jsonify
 from waitress import serve
 
-import MonsterBorg
+import ThunderBorg
+
 import threading
 import time
 import os
@@ -15,8 +19,6 @@ from functools import wraps
 HOST = "0.0.0.0"
 PORT = 8443
 
-# Set this in your shell:
-# export ROBOT_API_KEY="supersecret"
 API_KEY = os.getenv("ROBOT_API_KEY")
 
 if not API_KEY:
@@ -37,14 +39,16 @@ MIN_POWER = -1.0
 app = Flask(__name__)
 
 # =========================================================
-# MonsterBorg Init
+# ThunderBorg Init
 # =========================================================
 
-MB = MonsterBorg.MonsterBorg()
-MB.Init()
+TB = ThunderBorg.ThunderBorg()
+TB.Init()
 
-# Ensure motors start OFF
-MB.MotorsOff()
+if not TB.foundChip:
+    raise RuntimeError("ThunderBorg not detected")
+
+TB.MotorsOff()
 
 # =========================================================
 # Global State
@@ -64,13 +68,17 @@ def touch_watchdog():
     last_command_time = time.time()
 
 def emergency_stop():
+
     try:
-        MB.MotorsOff()
+        TB.MotorsOff()
+
     except Exception as e:
-        print(f"[ERROR] Failed emergency stop: {e}")
+        print("[ERROR] Emergency stop failed: {}".format(e))
 
 def authorize(req):
+
     key = req.headers.get("X-API-Key")
+
     return key == API_KEY
 
 # =========================================================
@@ -86,7 +94,6 @@ def require_api_key(f):
 
             print("[WARNING] Unauthorized request")
 
-            # Fail-safe behavior
             emergency_stop()
 
             return jsonify({
@@ -98,12 +105,14 @@ def require_api_key(f):
     return decorated
 
 # =========================================================
-# Watchdog Thread
+# Watchdog
 # =========================================================
 
 def watchdog():
 
     print("[INFO] Watchdog thread started")
+
+    stopped = False
 
     while True:
 
@@ -111,9 +120,13 @@ def watchdog():
 
         if elapsed > WATCHDOG_TIMEOUT:
 
-            print("[WARNING] Watchdog timeout reached")
+            if not stopped:
+                print("[WARNING] Watchdog timeout reached")
+                emergency_stop()
+                stopped = True
 
-            emergency_stop()
+        else:
+            stopped = False
 
         time.sleep(WATCHDOG_SLEEP)
 
@@ -158,13 +171,12 @@ def drive():
         left = float(data.get("left", 0))
         right = float(data.get("right", 0))
 
-        # Clamp values safely
         left = clamp(left, MIN_POWER, MAX_POWER)
         right = clamp(right, MIN_POWER, MAX_POWER)
 
     except Exception as e:
 
-        print(f"[ERROR] Invalid request: {e}")
+        print("[ERROR] Invalid request: {}".format(e))
 
         emergency_stop()
 
@@ -174,26 +186,18 @@ def drive():
 
     try:
 
-        # =================================================
-        # Differential drive mapping
-        # =================================================
-
-        # Left side motors
-        MB.SetMotor1(left)
-        MB.SetMotor3(left)
-
-        # Right side motors
-        MB.SetMotor2(right)
-        MB.SetMotor4(right)
+        # Differential drive
+        TB.SetMotor1(left)
+        TB.SetMotor2(right)
 
     except Exception as e:
 
-        print(f"[ERROR] Motor control failure: {e}")
+        print("[ERROR] Motor control failure: {}".format(e))
 
         emergency_stop()
 
         return jsonify({
-            "error": f"Motor failure: {str(e)}"
+            "error": "Motor failure: {}".format(str(e))
         }), 500
 
     return jsonify({
@@ -208,15 +212,16 @@ def drive():
 
 if __name__ == "__main__":
 
-    print("[INFO] Starting MonsterBorg robot server")
+    print("[INFO] Starting ThunderBorg robot server")
 
-    # Start watchdog
-    threading.Thread(
-        target=watchdog,
-        daemon=True
-    ).start()
+    watchdog_thread = threading.Thread(
+        target=watchdog
+    )
 
-    print(f"[INFO] Server listening on {HOST}:{PORT}")
+    watchdog_thread.daemon = True
+    watchdog_thread.start()
+
+    print("[INFO] Listening on {}:{}".format(HOST, PORT))
 
     serve(
         app,

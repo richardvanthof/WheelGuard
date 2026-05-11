@@ -1,3 +1,5 @@
+CONNECT TO BORG USING: ssh pi@192.168.137.215 , password wheelguard
+
 Tasks to be done in any order:
 
 - Connect to the monster borg with a screen and mouse / keyboard, and get ssh / remote network set up so you can connect with realvnc or ssh (ssh easier and then with vscode)
