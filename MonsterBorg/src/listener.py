@@ -1,7 +1,7 @@
 import sys
 sys.path.append("/home/pi/monsterborg")
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from waitress import serve
 
 import ThunderBorg
@@ -15,6 +15,9 @@ from functools import wraps
 # =========================================================
 # Configuration
 # =========================================================
+
+CURRENT_MODE = 1
+DEFAULT_POWER = 0.5
 
 HOST = "0.0.0.0"
 PORT = 8443
@@ -59,6 +62,37 @@ last_command_time = time.time()
 # =========================================================
 # Helpers
 # =========================================================
+
+def set_option(option_id):
+
+    global CURRENT_MODE
+
+    CURRENT_MODE = option_id
+
+    print("[INFO] Option selected: {}".format(option_id))
+
+    # =====================================================
+    # FUTURE EXPANSION
+    # =====================================================
+    # You can later add:
+    # - LED colors
+    # - Drive modes
+    # - Speed profiles
+    # - Autonomous behaviors
+    # - Sound effects
+    # - Sensor toggles
+    # - More importantly: Camera modes!! 
+    # - Or barking / cat sounds
+    # =====================================================
+
+    if option_id == 1:
+        pass
+
+    elif option_id == 2:
+        pass
+
+    elif option_id == 3:
+        pass
 
 def clamp(value, minimum=-1.0, maximum=1.0):
     return max(minimum, min(maximum, value))
@@ -214,6 +248,29 @@ def drive():
         "status": "driving",
         "left": left,
         "right": right
+    })
+
+@app.route("/")
+def index():
+
+    return send_file("teleop.html")
+
+
+@app.route("/option/<int:option_id>", methods=["POST"])
+@require_api_key
+def option(option_id):
+
+    if option_id not in [1, 2, 3]:
+
+        return jsonify({
+            "error": "invalid option"
+        }), 400
+
+    set_option(option_id)
+
+    return jsonify({
+        "status": "ok",
+        "option": option_id
     })
 
 # =========================================================

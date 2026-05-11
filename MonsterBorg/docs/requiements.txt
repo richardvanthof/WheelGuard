@@ -1,3 +1,1 @@
-On Borg:
-sudo apt install python3-pip hostapd dnsmasq -y
-pip3 install flask waitress
+Lots of things on borg need to be done. stuff needs to run on python2. aaa.
