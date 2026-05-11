@@ -159,11 +159,15 @@ def stop():
 @require_api_key
 def drive():
 
+    print("[INFO] /drive request received")
+
     touch_watchdog()
 
     try:
 
         data = request.get_json()
+
+        print("[INFO] JSON:", data)
 
         if data is None:
             raise ValueError("Missing JSON body")
@@ -173,6 +177,9 @@ def drive():
 
         left = clamp(left, MIN_POWER, MAX_POWER)
         right = clamp(right, MIN_POWER, MAX_POWER)
+
+        print("[INFO] Left:", left)
+        print("[INFO] Right:", right)
 
     except Exception as e:
 
@@ -186,9 +193,12 @@ def drive():
 
     try:
 
-        # Differential drive
+        print("[INFO] Setting motors")
+
         TB.SetMotor1(left)
         TB.SetMotor2(right)
+
+        print("[INFO] Motors updated")
 
     except Exception as e:
 
