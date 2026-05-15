@@ -55,6 +55,43 @@
             margin-top: 20px;
         }
 
+        .main-container {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: flex-start;
+
+            gap: 30px;
+
+            flex-wrap: wrap;
+        }
+
+        .video-panel {
+
+            background: rgba(20,20,20,0.7);
+
+            padding: 20px;
+
+            border-radius: 20px;
+
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+
+            margin-top: 20px;
+        }
+
+        .video-stream {
+
+            width: 640px;
+
+            max-width: 90vw;
+
+            border-radius: 15px;
+
+            border: 3px solid #444;
+        }
+
         .row {
 
             display: flex;
@@ -141,7 +178,18 @@
 
     <h1>MonsterBorg Teleop</h1>
 
-    <div class="panel">
+    <div class="main-container">
+
+        <div class="video-panel">
+
+            <img
+                src="/video_feed"
+                class="video-stream"
+            >
+
+        </div>
+
+        <div class="panel">
 
         <div class="slider-container">
 
@@ -197,6 +245,7 @@
             Ready
         </div>
 
+    </div>
 
     </div>
 

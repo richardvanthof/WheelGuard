@@ -1,7 +1,7 @@
 import sys
 sys.path.append("/home/pi/monsterborg")
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 from waitress import serve
 
 from tborg import ThunderBorg
@@ -10,6 +10,7 @@ import threading
 import time
 import os
 import subprocess
+import cv2
 
 from functools import wraps
 
@@ -52,6 +53,22 @@ if not TB.find_board():
     raise RuntimeError("ThunderBorg not detected")
 
 TB.halt_motors()
+
+# =========================================================
+# Camera Init
+# =========================================================
+
+camera = cv2.VideoCapture(0)
+
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+camera.set(cv2.CAP_PROP_FPS, 30)
+
+if not camera.isOpened():
+    print("[WARNING] Camera failed to open")
+else:
+    print("[INFO] Camera initialized")
+
 
 # =========================================================
 # Global State
@@ -155,6 +172,26 @@ def watchdog():
 
         time.sleep(WATCHDOG_SLEEP)
 
+def generate_frames():
+
+    while True:
+
+        success, frame = camera.read()
+
+        if not success:
+            continue
+
+        _, buffer = cv2.imencode(".jpg", frame)
+
+        frame_bytes = buffer.tobytes()
+
+        yield (
+            b'--frame\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n' +
+            frame_bytes +
+            b'\r\n'
+        )
+
 # =========================================================
 # Routes
 # =========================================================
@@ -252,6 +289,17 @@ def drive():
         "left": left,
         "right": right
     })
+
+@app.route("/video_feed")
+def video_feed():
+
+    return Response(
+
+        generate_frames(),
+
+        mimetype=
+        "multipart/x-mixed-replace; boundary=frame"
+    )
 
 @app.route("/")
 def index():
