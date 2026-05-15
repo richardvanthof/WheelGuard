@@ -9,6 +9,7 @@ from tborg import ThunderBorg
 import threading
 import time
 import os
+import subprocess
 
 from functools import wraps
 
@@ -62,6 +63,20 @@ last_command_time = time.time()
 # Helpers
 # =========================================================
 
+def play_sound(filename):
+
+    try:
+
+        subprocess.Popen(
+            ["aplay", filename],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+    except Exception as e:
+
+        print("[ERROR] Failed to play sound: {}".format(e))
+
 def set_option(option_id):
 
     global CURRENT_MODE
@@ -69,15 +84,6 @@ def set_option(option_id):
     CURRENT_MODE = option_id
 
     print("[INFO] Option selected: {}".format(option_id))
-
-    if option_id == 1:
-        pass
-
-    elif option_id == 2:
-        pass
-
-    elif option_id == 3:
-        pass
 
 def clamp(value, minimum=-1.0, maximum=1.0):
     return max(minimum, min(maximum, value))
@@ -174,6 +180,18 @@ def stop():
         "status": "stopped"
     })
 
+@app.route("/bark", methods=["POST"])
+@require_api_key
+def bark():
+
+    print("[INFO] Bark requested")
+
+    play_sound("/home/pi/MonsterBorg/src/fixed_dog.wav")
+
+    return jsonify({
+        "status": "bark"
+    })
+
 @app.route("/drive", methods=["POST"])
 @require_api_key
 def drive():
@@ -239,23 +257,6 @@ def drive():
 def index():
 
     return send_file("teleop.html")
-
-@app.route("/option/<int:option_id>", methods=["POST"])
-@require_api_key
-def option(option_id):
-
-    if option_id not in [1, 2, 3]:
-
-        return jsonify({
-            "error": "invalid option"
-        }), 400
-
-    set_option(option_id)
-
-    return jsonify({
-        "status": "ok",
-        "option": option_id
-    })
 
 # =========================================================
 # Main

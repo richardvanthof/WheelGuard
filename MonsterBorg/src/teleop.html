@@ -96,17 +96,9 @@
             background: #666;
         }
 
-        .stop {
+        .bark {
 
             background: #b22222;
-        }
-
-        .option-btn {
-
-            width: 160px;
-            height: 70px;
-
-            font-size: 20px;
         }
 
         .status {
@@ -137,12 +129,6 @@
                 height: 90px;
 
                 font-size: 24px;
-            }
-
-            .option-btn {
-
-                width: 120px;
-                height: 60px;
             }
         }
 
@@ -180,31 +166,12 @@
 
         <div class="row">
             <button id="left">A</button>
-            <button class="stop" id="stop">STOP</button>
+            <button class="bark" id="bark">BARK</button>
             <button id="right">D</button>
         </div>
 
         <div class="row">
             <button id="backward">S</button>
-        </div>
-
-        <div style="margin-top: 30px;">
-
-            <button class="option-btn"
-                onclick="setOption(1)">
-                Option 1
-            </button>
-
-            <button class="option-btn"
-                onclick="setOption(2)">
-                Option 2
-            </button>
-
-            <button class="option-btn"
-                onclick="setOption(3)">
-                Option 3
-            </button>
-
         </div>
 
         <div class="status" id="status">
@@ -284,6 +251,28 @@ async function stopRobot() {
         });
 
         statusText.innerText = "Stopped";
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
+
+async function bark() {
+
+    try {
+
+        await fetch("/bark", {
+
+            method: "POST",
+
+            headers: {
+
+                "X-API-Key": API_KEY
+            }
+        });
+
+        statusText.innerText = "BARK!";
 
     } catch (err) {
 
@@ -385,8 +374,8 @@ bindButton(
     "Turning Right"
 );
 
-document.getElementById("stop")
-.addEventListener("click", stopDriving);
+document.getElementById("bark")
+.addEventListener("click", bark);
 
 document.addEventListener("keydown", function(e) {
 
@@ -417,29 +406,6 @@ document.addEventListener("keydown", function(e) {
 });
 
 document.addEventListener("keyup", stopDriving);
-
-async function setOption(option) {
-
-    try {
-
-        await fetch("/option/" + option, {
-
-            method: "POST",
-
-            headers: {
-
-                "X-API-Key": API_KEY
-            }
-        });
-
-        statusText.innerText =
-            "Option " + option + " Selected";
-
-    } catch (err) {
-
-        console.error(err);
-    }
-}
 
 </script>
 
