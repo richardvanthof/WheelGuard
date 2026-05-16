@@ -132,6 +132,13 @@
 
             background: #666;
         }
+        button:disabled {
+            opacity: 0.4;
+
+            cursor: not-allowed;
+
+            transform: none;
+        }
 
         .bark {
 
@@ -224,22 +231,32 @@
 
         <div style="margin-top: 30px;">
 
-            <button class="option-btn"
-                onclick="setOption(1)">
-                Option 1
-            </button>
+        <button
+            class="option-btn"
+            id="modeToggle"
+            onclick="toggleControlMode()">
 
-            <button class="option-btn"
-                onclick="setOption(2)">
-                Option 2
-            </button>
+            Manual Control
 
-            <button class="option-btn"
-                onclick="setOption(3)">
-                Option 3
-            </button>
+        </button>
 
-        </div>
+        <button
+            class="option-btn"
+            onclick="setOption(2)">
+
+            Option 2
+
+        </button>
+
+        <button
+            class="option-btn"
+            onclick="setOption(3)">
+
+            Option 3
+
+        </button>
+
+    </div>
 
         <div class="status" id="status">
             Ready
@@ -256,6 +273,7 @@
 const API_KEY = "supersecret";
 
 let interval = null;
+let controlMode = "manual";
 
 const statusText = document.getElementById("status");
 
@@ -273,6 +291,52 @@ powerSlider.addEventListener("input", function() {
 function getPower() {
 
     return parseFloat(powerSlider.value);
+}
+
+function toggleControlMode() {
+
+    const modeButton =
+        document.getElementById("modeToggle");
+
+    const movementButtons = [
+
+        document.getElementById("forward"),
+        document.getElementById("backward"),
+        document.getElementById("left"),
+        document.getElementById("right")
+    ];
+
+    if (controlMode === "manual") {
+
+        controlMode = "camera";
+
+        movementButtons.forEach(function(btn) {
+
+            btn.disabled = true;
+        });
+
+        modeButton.innerText =
+            "Camera Control";
+
+        statusText.innerText =
+            "Camera Control Enabled";
+    }
+
+    else {
+
+        controlMode = "manual";
+
+        movementButtons.forEach(function(btn) {
+
+            btn.disabled = false;
+        });
+
+        modeButton.innerText =
+            "Manual Control";
+
+        statusText.innerText =
+            "Manual Control Enabled";
+    }
 }
 
 async function sendDrive(left, right) {
@@ -447,6 +511,9 @@ document.getElementById("bark")
 .addEventListener("click", bark);
 
 document.addEventListener("keydown", function(e) {
+
+    if (controlMode !== "manual")
+        return;
 
     if (interval)
         return;
