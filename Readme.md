@@ -19,3 +19,4 @@ https://www.youtube.com/watch?v=HJAE5Pk8Nyw -->
 Service autostarted based on listener.py
 
 After updating listener.py on the robot, must be rebooted with sudo systemctl restart monsterborg.service
+Watch logs with journalctl -u monsterborg.service -f
