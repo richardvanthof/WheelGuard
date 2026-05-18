@@ -60,9 +60,9 @@ TB.halt_motors()
 
 camera = cv2.VideoCapture(0)
 
-camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-camera.set(cv2.CAP_PROP_FPS, 30)
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+camera.set(cv2.CAP_PROP_FPS, 15)
 
 if not camera.isOpened():
     print("[WARNING] Camera failed to open")
@@ -181,7 +181,11 @@ def generate_frames():
         if not success:
             continue
 
-        _, buffer = cv2.imencode(".jpg", frame)
+        _, buffer = cv2.imencode(
+            ".jpg",
+            frame,
+            [int(cv2.IMWRITE_JPEG_QUALITY), 60]
+        )
 
         frame_bytes = buffer.tobytes()
 
