@@ -20,3 +20,10 @@ Service autostarted based on listener.py
 
 After updating listener.py on the robot, must be rebooted with sudo systemctl restart monsterborg.service
 Watch logs with journalctl -u monsterborg.service -f
+
+Connect with the wifi first
+SSID= WheelGuard, password is wheelguard
+ssh to pi@192.168.4.1 to interact with robot internally
+
+Webpage autostart after minute of booting is: http://192.168.4.1:8443
+
