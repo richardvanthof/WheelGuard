@@ -14,3 +14,8 @@ Robot that deters people from touching someone elses wheelchair.
 <!-- ## ROS tutorials
 https://www.youtube.com/watch?v=HJAE5Pk8Nyw -->
 
+## Robot
+
+Service autostarted based on listener.py
+
+After updating listener.py on the robot, must be rebooted with sudo systemctl restart monsterborg.service
