@@ -58,7 +58,7 @@ TB.halt_motors()
 # Camera Init
 # =========================================================
 
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
 camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
@@ -174,11 +174,18 @@ def watchdog():
 
 def generate_frames():
 
+    print("[INFO] Video stream started")
+
     while True:
 
         success, frame = camera.read()
 
         if not success:
+
+            print("[WARNING] Failed to read camera frame")
+
+            time.sleep(0.1)
+
             continue
 
         _, buffer = cv2.imencode(
