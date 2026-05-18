@@ -81,6 +81,24 @@ last_command_time = time.time()
 # Helpers
 # =========================================================
 
+def set_volume():
+
+    try:
+
+        subprocess.run(
+
+            ["amixer", "sset", "PCM", "90%"],
+
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        print("[INFO] Volume set")
+
+    except Exception as e:
+
+        print("[ERROR] Failed to set volume:", e)
+
 def play_sound(filename):
 
     try:

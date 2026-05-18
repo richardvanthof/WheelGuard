@@ -27,3 +27,6 @@ ssh to pi@192.168.4.1 to interact with robot internally
 
 Webpage autostart after minute of booting is: http://192.168.4.1:8443
 
+Order of operation: Turn the robot on, turn the speaker on, connect to the network
+ssh into it
+first do alsamixer and then up the volume 
