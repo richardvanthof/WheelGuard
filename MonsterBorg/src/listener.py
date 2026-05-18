@@ -1,14 +1,16 @@
 import sys
 sys.path.append("/home/pi/monsterborg")
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 from waitress import serve
 
-import ThunderBorg
+from tborg import ThunderBorg
 
 import threading
 import time
 import os
+import subprocess
+import cv2
 
 from functools import wraps
 
@@ -45,13 +47,28 @@ app = Flask(__name__)
 # ThunderBorg Init
 # =========================================================
 
-TB = ThunderBorg.ThunderBorg()
-TB.Init()
+TB = ThunderBorg()
 
-if not TB.foundChip:
+if not TB.find_board():
     raise RuntimeError("ThunderBorg not detected")
 
-TB.MotorsOff()
+TB.halt_motors()
+
+# =========================================================
+# Camera Init
+# =========================================================
+
+camera = cv2.VideoCapture(0)
+
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+camera.set(cv2.CAP_PROP_FPS, 30)
+
+if not camera.isOpened():
+    print("[WARNING] Camera failed to open")
+else:
+    print("[INFO] Camera initialized")
+
 
 # =========================================================
 # Global State
@@ -63,6 +80,20 @@ last_command_time = time.time()
 # Helpers
 # =========================================================
 
+def play_sound(filename):
+
+    try:
+
+        subprocess.Popen(
+            ["aplay", filename],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+    except Exception as e:
+
+        print("[ERROR] Failed to play sound: {}".format(e))
+
 def set_option(option_id):
 
     global CURRENT_MODE
@@ -70,29 +101,6 @@ def set_option(option_id):
     CURRENT_MODE = option_id
 
     print("[INFO] Option selected: {}".format(option_id))
-
-    # =====================================================
-    # FUTURE EXPANSION
-    # =====================================================
-    # You can later add:
-    # - LED colors
-    # - Drive modes
-    # - Speed profiles
-    # - Autonomous behaviors
-    # - Sound effects
-    # - Sensor toggles
-    # - More importantly: Camera modes!! 
-    # - Or barking / cat sounds
-    # =====================================================
-
-    if option_id == 1:
-        pass
-
-    elif option_id == 2:
-        pass
-
-    elif option_id == 3:
-        pass
 
 def clamp(value, minimum=-1.0, maximum=1.0):
     return max(minimum, min(maximum, value))
@@ -104,7 +112,7 @@ def touch_watchdog():
 def emergency_stop():
 
     try:
-        TB.MotorsOff()
+        TB.halt_motors()
 
     except Exception as e:
         print("[ERROR] Emergency stop failed: {}".format(e))
@@ -164,6 +172,26 @@ def watchdog():
 
         time.sleep(WATCHDOG_SLEEP)
 
+def generate_frames():
+
+    while True:
+
+        success, frame = camera.read()
+
+        if not success:
+            continue
+
+        _, buffer = cv2.imencode(".jpg", frame)
+
+        frame_bytes = buffer.tobytes()
+
+        yield (
+            b'--frame\r\n'
+            b'Content-Type: image/jpeg\r\n\r\n' +
+            frame_bytes +
+            b'\r\n'
+        )
+
 # =========================================================
 # Routes
 # =========================================================
@@ -187,6 +215,18 @@ def stop():
 
     return jsonify({
         "status": "stopped"
+    })
+
+@app.route("/bark", methods=["POST"])
+@require_api_key
+def bark():
+
+    print("[INFO] Bark requested")
+
+    play_sound("/home/pi/MonsterBorg/src/fixed_dog.wav")
+
+    return jsonify({
+        "status": "bark"
     })
 
 @app.route("/drive", methods=["POST"])
@@ -229,8 +269,8 @@ def drive():
 
         print("[INFO] Setting motors")
 
-        TB.SetMotor1(left)
-        TB.SetMotor2(right)
+        TB.set_motor_one(left)
+        TB.set_motor_two(right)
 
         print("[INFO] Motors updated")
 
@@ -250,28 +290,21 @@ def drive():
         "right": right
     })
 
+@app.route("/video_feed")
+def video_feed():
+
+    return Response(
+
+        generate_frames(),
+
+        mimetype=
+        "multipart/x-mixed-replace; boundary=frame"
+    )
+
 @app.route("/")
 def index():
 
     return send_file("teleop.html")
-
-
-@app.route("/option/<int:option_id>", methods=["POST"])
-@require_api_key
-def option(option_id):
-
-    if option_id not in [1, 2, 3]:
-
-        return jsonify({
-            "error": "invalid option"
-        }), 400
-
-    set_option(option_id)
-
-    return jsonify({
-        "status": "ok",
-        "option": option_id
-    })
 
 # =========================================================
 # Main
