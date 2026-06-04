@@ -18,6 +18,9 @@ from functools import wraps
 # Configuration
 # =========================================================
 
+video_clients = 0
+video_lock = threading.Lock()
+
 CURRENT_MODE = 1
 DEFAULT_POWER = 0.5
 
@@ -208,32 +211,63 @@ def generate_frames():
 
     print("[INFO] Video stream started")
 
-    while True:
+    with video_lock:
 
-        success, frame = camera.read()
+        video_clients += 1
 
-        if not success:
-
-            print("[WARNING] Failed to read camera frame")
-
-            time.sleep(0.1)
-
-            continue
-
-        _, buffer = cv2.imencode(
-            ".jpg",
-            frame,
-            [int(cv2.IMWRITE_JPEG_QUALITY), 60]
+        print(
+            "[INFO] Video clients:",
+            video_clients
         )
 
-        frame_bytes = buffer.tobytes()
+    try:
 
-        yield (
-            b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' +
-            frame_bytes +
-            b'\r\n'
-        )
+        while True:
+
+            success, frame = camera.read()
+
+            if not success:
+                print("[WARNING] Camera read failed")
+
+                camera.release()
+
+                time.sleep(1)
+
+                camera.open(0, cv2.CAP_V4L2)
+                camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+                camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+                camera.set(cv2.CAP_PROP_FPS, 10)
+                camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+                continue
+
+            _, buffer = cv2.imencode(
+                ".jpg",
+                frame,
+                [int(cv2.IMWRITE_JPEG_QUALITY), 40]
+            )
+
+            frame_bytes = buffer.tobytes()
+
+            time.sleep(0.03)
+
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' +
+                frame_bytes +
+                b'\r\n'
+            )
+
+    finally:
+
+        with video_lock:
+
+            video_clients -= 1
+
+            print(
+                "[INFO] Video client disconnected:",
+                video_clients
+            )
 
 # =========================================================
 # Routes
@@ -276,7 +310,7 @@ def bark():
 @require_api_key
 def drive():
 
-    print("[INFO] /drive request received")
+    #print("[INFO] /drive request received")
 
     touch_watchdog()
 
@@ -284,7 +318,7 @@ def drive():
 
         data = request.get_json()
 
-        print("[INFO] JSON:", data)
+        #print("[INFO] JSON:", data)
 
         if data is None:
             raise ValueError("Missing JSON body")
@@ -295,8 +329,8 @@ def drive():
         left = clamp(left, MIN_POWER, MAX_POWER)
         right = clamp(right, MIN_POWER, MAX_POWER)
 
-        print("[INFO] Left:", left)
-        print("[INFO] Right:", right)
+        #print("[INFO] Left:", left)
+        #print("[INFO] Right:", right)
 
     except Exception as e:
 
@@ -310,12 +344,12 @@ def drive():
 
     try:
 
-        print("[INFO] Setting motors")
+        #print("[INFO] Setting motors")
 
         TB.set_motor_one(left)
         TB.set_motor_two(right)
 
-        print("[INFO] Motors updated")
+        #print("[INFO] Motors updated")
 
     except Exception as e:
 
@@ -371,5 +405,6 @@ if __name__ == "__main__":
     serve(
         app,
         host=HOST,
-        port=PORT
+        port=PORT,
+        threads=4
     )
