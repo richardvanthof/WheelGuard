@@ -1,3 +1,5 @@
+# todo: do not send a continuous stream of command
+
 import cv2
 import numpy as np
 from pupil_apriltags import Detector
@@ -10,37 +12,37 @@ robot = WP.MonsterBorgClient(
 
 def forward():
     print("Moving forward")
-    robot.forward(
-        0.5,
-        0.5,
-        1.0
-    )
+    # robot.forward(
+    #     0.5,
+    #     0.5,
+    #     1.0
+    # )
 
 def backward():
     print("Moving backward")
-    robot.backward(
-        0.5,
-        0.5,
-        1.0
-    )
+    # robot.backward(
+    #     0.5,
+    #     0.5,
+    #     1.0
+    # )
 
 def left():
     print("Turning left")
-    robot.left(
-        0.5,
-        0.5,
-        1.0
-    )
+    # robot.left(
+    #     0.5,
+    #     0.5,
+    #     1.0
+    # )
 
 def right():
     print("Turning right")
-    robot.right(
-        0.5,
-        0.5,
-        1.0
-    )
+    # robot.right(
+    #     0.5,
+    #     0.5,
+    #     1.0
+    # )
 
-    WP.drive()
+
 
 def follow_apriltag():
     """Main function to follow an AprilTag with the robot."""
