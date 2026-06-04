@@ -1,46 +1,80 @@
 # todo: do not send a continuous stream of command
 
 import cv2
+import os
 import numpy as np
 from pupil_apriltags import Detector
 import wheelguard_api as WP
 
 robot = WP.MonsterBorgClient(
-    host="192.168.137.215",
-    api_key="supersecret"
+    host=os.getenv("ROBOT_HOST", "localhost"),
+    api_key=os.getenv("ROBOT_API_KEY")
 )
 
+
+def clamp(value, minimum, maximum):
+    return max(minimum, min(maximum, value))
+
 def forward():
-    print("Moving forward")
-    # robot.forward(
-    #     0.5,
-    #     0.5,
-    #     1.0
-    # )
+    try:
+        print("Moving forward")
+        robot.forward(
+            0.5,
+            0.5,
+            1.0
+        )
+    except Exception as e:
+        print(f"Failed to move forward: {e}")
 
 def backward():
-    print("Moving backward")
-    # robot.backward(
-    #     0.5,
-    #     0.5,
-    #     1.0
-    # )
+    try:
+        print("Moving backward")
+        robot.backward(
+            0.5,
+            0.5,
+            1.0
+        )
+    except Exception as e:
+        print(f"Failed to move backward: {e}")
 
 def left():
-    print("Turning left")
-    # robot.left(
-    #     0.5,
-    #     0.5,
-    #     1.0
-    # )
+    try:
+        print("Turning left")
+        robot.left(
+            0.5,
+            0.5,
+            1.0
+        )
+    except Exception as e:
+        print(f"Failed to turn left: {e}")
 
 def right():
-    print("Turning right")
-    # robot.right(
-    #     0.5,
-    #     0.5,
-    #     1.0
-    # )
+    try:
+        print("Turning right")
+        robot.right(
+            0.5,
+            0.5,
+            1.0
+        )
+    except Exception as e:
+        print(f"Failed to turn right: {e}")
+
+
+def steer_toward_tag(tag_center_x, frame_center_x, max_turn=0.5):
+    """Compute a proportional turn value from horizontal pixel error."""
+    error = tag_center_x - frame_center_x
+    normalized_error = error / frame_center_x
+    turn = clamp(normalized_error * max_turn, -max_turn, max_turn)
+
+    try:
+        print(f"Steering with turn power: {turn:.2f}")
+        robot.arcade(
+            0.4,
+            turn,
+            0.2
+        )
+    except Exception as e:
+        print(f"Failed to steer toward tag: {e}")
 
 
 
@@ -64,6 +98,7 @@ def follow_apriltag():
     position_threshold = 30
     
     print("Starting AprilTag follower...")
+    print(os.getenv("ROBOT_API_KEY"))
     
     try:
         while True:
@@ -94,11 +129,9 @@ def follow_apriltag():
                 tag_height = np.linalg.norm(tag.corners[3] - tag.corners[0])
                 tag_area = tag_width * tag_height
                 
-                # Horizontal movement (left/right)
-                if tag_center_x < frame_center_x - position_threshold:
-                    left()
-                elif tag_center_x > frame_center_x + position_threshold:
-                    right()
+                # Horizontal movement scales with distance from the frame center.
+                if abs(tag_center_x - frame_center_x) > position_threshold:
+                    steer_toward_tag(tag_center_x, frame_center_x)
                 
                 # Vertical movement (forward/backward) based on area
                 if tag_area < target_area - area_threshold:
