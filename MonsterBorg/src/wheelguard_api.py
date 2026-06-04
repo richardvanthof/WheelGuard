@@ -20,6 +20,9 @@ class MonsterBorgClient(object):
     # =====================================================
 
     def drive(self, left, right):
+        print(
+            f"drive {left:.2f} {right:.2f} {time.time():.3f}"
+        )
 
         return requests.post(
 

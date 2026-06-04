@@ -25,6 +25,8 @@ HOST = "0.0.0.0"
 PORT = 8443
 
 API_KEY = os.getenv("ROBOT_API_KEY")
+ENABLE_CAMERA = False
+
 
 if not API_KEY:
     raise RuntimeError(
@@ -58,17 +60,25 @@ TB.halt_motors()
 # Camera Init
 # =========================================================
 
-camera = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
-camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
-camera.set(cv2.CAP_PROP_FPS, 15)
-camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+camera = None
 
-if not camera.isOpened():
-    print("[WARNING] Camera failed to open")
+if ENABLE_CAMERA:
+
+    camera = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    camera.set(cv2.CAP_PROP_FPS, 15)
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+    if not camera.isOpened():
+        print("[WARNING] Camera failed to open")
+        camera = None
+    else:
+        print("[INFO] Camera initialized")
 else:
-    print("[INFO] Camera initialized")
+    print("[INFO] Camera disabled")
 
 
 # =========================================================
@@ -192,6 +202,9 @@ def watchdog():
         time.sleep(WATCHDOG_SLEEP)
 
 def generate_frames():
+
+    if camera is None:
+        return
 
     print("[INFO] Video stream started")
 
@@ -323,12 +336,14 @@ def drive():
 @app.route("/video_feed")
 def video_feed():
 
+    if camera is None:
+        return jsonify({
+            "error": "camera disabled"
+        }), 503
+
     return Response(
-
         generate_frames(),
-
-        mimetype=
-        "multipart/x-mixed-replace; boundary=frame"
+        mimetype="multipart/x-mixed-replace; boundary=frame"
     )
 
 @app.route("/")
