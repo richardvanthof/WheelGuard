@@ -11,6 +11,7 @@ import time
 import os
 import subprocess
 import cv2
+import requests
 
 from functools import wraps
 
@@ -30,6 +31,8 @@ PORT = 8443
 API_KEY = os.getenv("ROBOT_API_KEY")
 ENABLE_CAMERA = False
 
+VISION_HOST = "192.168.4.191"
+VISION_PORT = 8221
 
 if not API_KEY:
     raise RuntimeError(
@@ -41,6 +44,31 @@ WATCHDOG_SLEEP = 0.1
 
 MAX_POWER = 1.0
 MIN_POWER = -1.0
+
+
+### Mode updator
+
+def send_mode_update(enabled):
+
+    try:
+
+        requests.post(
+            f"http://{VISION_HOST}:{VISION_PORT}/mode",
+            headers={
+                "X-API-Key": API_KEY
+            },
+            json={
+                "autonomous": enabled
+            },
+            timeout=1
+        )
+
+    except Exception as e:
+
+        print(
+            "[WARNING] Failed to send mode update:",
+            e
+        )
 
 # =========================================================
 # Flask App
@@ -132,6 +160,11 @@ def set_option(option_id):
 
     CURRENT_MODE = option_id
 
+    print(
+        "[INFO] Option selected:",
+        option_id
+    )
+
     print("[INFO] Option selected: {}".format(option_id))
 
 def clamp(value, minimum=-1.0, maximum=1.0):
@@ -205,6 +238,7 @@ def watchdog():
         time.sleep(WATCHDOG_SLEEP)
 
 def generate_frames():
+    global video_clients
 
     if camera is None:
         return
@@ -272,6 +306,27 @@ def generate_frames():
 # =========================================================
 # Routes
 # =========================================================
+
+@app.route("/mode", methods=["POST"])
+@require_api_key
+def mode():
+
+    data = request.get_json() or {}
+
+    enabled = bool(
+        data.get("autonomous", False)
+    )
+
+    send_mode_update(enabled)
+
+    print(
+        "[INFO] Autonomous mode:",
+        enabled
+    )
+
+    return jsonify({
+        "autonomous": enabled
+    })
 
 @app.route("/health", methods=["GET"])
 def health():

@@ -293,6 +293,32 @@ function getPower() {
     return parseFloat(powerSlider.value);
 }
 
+async function updateMode(enabled) {
+
+    try {
+
+        await fetch("/mode", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json",
+                "X-API-Key": API_KEY
+            },
+
+            body: JSON.stringify({
+
+                autonomous: enabled
+            })
+        });
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
+
 function toggleControlMode() {
 
     const modeButton =
@@ -320,6 +346,8 @@ function toggleControlMode() {
 
         statusText.innerText =
             "Camera Control Enabled";
+
+        updateMode(true);
     }
 
     else {
@@ -336,6 +364,8 @@ function toggleControlMode() {
 
         statusText.innerText =
             "Manual Control Enabled";
+        
+        updateMode(false);
     }
 }
 

@@ -26,31 +26,67 @@ first_bark_time = 0
 
 API_KEY = "supersecret"
 
-class BarkHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        global bark, last_bark_time, first_bark_time
+# Control Mode
+autonomous_mode = False
 
-        if self.path != "/bark":
-            self.send_response(404)
-            self.end_headers()
-            return
+class BarkHandler(BaseHTTPRequestHandler):
+
+    def do_POST(self):
+        global bark
+        global last_bark_time
+        global first_bark_time
+        global autonomous_mode
 
         if self.headers.get("X-API-Key") != API_KEY:
             self.send_response(403)
             self.end_headers()
             return
 
-        bark = True
-        last_bark_time = time.time()
-        if first_bark_time == 0:
-            first_bark_time = last_bark_time
+        if self.path == "/bark":
 
-        self.send_response(200)
+            bark = True
+            last_bark_time = time.time()
+
+            if first_bark_time == 0:
+                first_bark_time = last_bark_time
+
+            self.send_response(200)
+            self.end_headers()
+            return
+
+        elif self.path == "/mode":
+
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+
+            try:
+                data = json.loads(body)
+
+                autonomous_mode = bool(
+                    data.get("autonomous", False)
+                )
+
+                print(
+                    f"[MODE] autonomous_mode={autonomous_mode}"
+                )
+
+                self.send_response(200)
+
+            except Exception as e:
+
+                print("[MODE] Invalid payload:", e)
+
+                self.send_response(400)
+
+            self.end_headers()
+            return
+
+        self.send_response(404)
         self.end_headers()
 
-    def log_message(self, format, *args):
-        pass  # suppress default logging
 
+def is_autonomous_mode():
+    return autonomous_mode
 
 def start_bark_server():
     server = HTTPServer(("0.0.0.0", 8221), BarkHandler)
@@ -945,12 +981,17 @@ class RobotController:
 
     def update(self, det):
         """Update the robot command from the latest vision detection."""
+
+        if not is_autonomous_mode():
+            return
+
         # Keep the robot stationary while the target model is being prepared
         if det.status in ("SCAN", "LOCK"):
             self.stop()
             return
 
         if det.detected:
+
             # Save the latest target direction for later search recovery
             self.last_seen_x = det.error_x
             self.last_seen_y = det.error_y
