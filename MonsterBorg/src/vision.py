@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import time
 from dataclasses import dataclass
 from collections import deque
 from typing import Optional, Tuple, List
 from wheelguard_api import MonsterBorgClient
+import socket
+import threading
+import json
 
 import cv2
 import numpy as np
@@ -14,6 +18,44 @@ import numpy as np
 ENABLE_CAMERA = False
 MIN_DRIVE_POWER = 0.7
 MAX_DRIVE_POWER = 1.0
+
+# Barking
+bark = False
+last_bark_time = 0
+first_bark_time = 0
+
+API_KEY = "supersecret"
+
+class BarkHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        global bark, last_bark_time, first_bark_time
+
+        if self.path != "/bark":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        if self.headers.get("X-API-Key") != API_KEY:
+            self.send_response(403)
+            self.end_headers()
+            return
+
+        bark = True
+        last_bark_time = time.time()
+        if first_bark_time == 0:
+            first_bark_time = last_bark_time
+
+        self.send_response(200)
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        pass  # suppress default logging
+
+
+def start_bark_server():
+    server = HTTPServer(("0.0.0.0", 8221), BarkHandler)
+    print("[BARK] Listening on :8221")
+    server.serve_forever()
 
 robot = MonsterBorgClient(
     host="192.168.4.1",
@@ -987,7 +1029,19 @@ class RobotController:
             self.search_phase_start = now
 
 
+def is_barking():
+    global bark, first_bark_time
+    are_we_barking = time.time() - first_bark_time < 1.0
+    bark = are_we_barking
+    if bark == False:
+        first_bark_time = 0
+    return are_we_barking
+
 def main():
+    threading.Thread(
+        target=start_bark_server,
+        daemon=True
+    ).start()
     """Parse options, start camera/control modules, and run the vision loop."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--control", action="store_true")
@@ -1056,6 +1110,8 @@ def main():
                 key = cv2.waitKey(1) & 0xFF
                 if key in (ord("q"), 27):
                     break
+            if is_barking():
+                print("[MAIN] Bark command received from sp32") #TODO: Implement barking logic by receiving YOLO state here
 
     except KeyboardInterrupt:
         print("\n[MAIN] Ctrl+C detected.")
