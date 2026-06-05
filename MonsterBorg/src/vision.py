@@ -16,7 +16,7 @@ MIN_DRIVE_POWER = 0.7
 MAX_DRIVE_POWER = 1.0
 
 robot = MonsterBorgClient(
-    host="127.0.0.1",
+    host="192.168.4.1",
     api_key="supersecret"
 )
 
