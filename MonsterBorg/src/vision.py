@@ -621,12 +621,12 @@ class Challenge2Vision:
 
         corners, ids, rejected = self.aruco_detector.detectMarkers(frame)
 
-        print(
-            "ids:",
-            None if ids is None else ids.flatten(),
-            "rejected:",
-            len(rejected)
-        )
+        #print(
+        #    "ids:",
+        #    None if ids is None else ids.flatten(),
+        #    "rejected:",
+        #    len(rejected)
+        #)
 
         if ids is None:
             self.lost_frames += 1
