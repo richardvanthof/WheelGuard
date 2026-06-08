@@ -94,10 +94,14 @@ def start_bark_server():
     print("[BARK] Listening on :8221")
     server.serve_forever()
 
-robot = MonsterBorgClient(
-    host="192.168.4.1",
-    api_key="supersecret"
-)
+try:
+    robot = MonsterBorgClient(
+        host="192.168.4.1",
+        api_key="supersecret"
+    )
+except Exception as e:
+    print(f"Robot unavailable: {e}")
+    robot = None
 
 @dataclass
 class Detection:
@@ -673,6 +677,12 @@ class Challenge2Vision:
 
         x, y, w, h = cv2.boundingRect(pts)
 
+        marker_area = cv2.contourArea(pts)
+
+        print(
+            f"[ARUCO] bbox={w*h} contour={marker_area:.0f}"
+        )
+
         cv2.circle(debug, (cx, cy), 5, (0, 0, 255), -1)
 
         self.lost_frames = 0
@@ -687,6 +697,7 @@ class Challenge2Vision:
             h,
             confidence=1.0,
             status=f"ARUCO {self.target_id}",
+            actual_area=marker_area,
         )
 
     def _choose_follow_candidate(self, candidates, W, H):
@@ -734,7 +745,19 @@ class Challenge2Vision:
 
         return best
 
-    def _output_from_bbox(self, debug, mask, frame_shape, x, y, w, h, confidence, status):
+    def _output_from_bbox(
+        self,
+        debug,
+        mask,
+        frame_shape,
+        x,
+        y,
+        w,
+        h,
+        confidence,
+        status,
+        actual_area=None
+    ):
         """Convert a target box into normalized control errors and debug output.
 
         error_x and error_y are normalized to roughly [-1, 1], and area_ratio
@@ -750,7 +773,10 @@ class Challenge2Vision:
         error_x = (cx - W / 2) / (W / 2)
         error_y = (cy - H / 2) / (H / 2)
 
-        area_ratio = (w * h) / float(W * H)
+        if actual_area is None:
+            area_ratio = (w * h) / float(W * H)
+        else:
+            area_ratio = actual_area / float(W * H)
         
         # Smooth control signals to reduce jitter in the robot response
         self.smooth_error_x = (
@@ -1074,8 +1100,8 @@ def main():
 
     idx = find_laptop_camera()
     # Open the selected camera source
-    camera = cv2.VideoCapture(idx, cv2.CAP_V4L2) #For Linux
-    #camera = cv2.VideoCapture(0, cv2.CAP_DSHOW) # For Windows
+    #camera = cv2.VideoCapture(idx, cv2.CAP_V4L2) #For Linux
+    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW) # For Windows
 
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
@@ -1110,6 +1136,9 @@ def main():
     print("[MAIN] Challenge 2 started.")
     print("[MAIN] Robot stays stopped during SCAN and LOCK.")
     print("[MAIN] Press q or ESC to quit if display is enabled.")
+
+    print("[TEST] Sending stop command")
+    robot.stop() #TODO: Debug print
 
     try:
         while True:
