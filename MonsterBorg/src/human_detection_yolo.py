@@ -226,12 +226,15 @@ def main():
         sys.exit("Cannot open camera {}".format(args.camera))
     print("Camera {} ready. Press q or ESC to quit.\n".format(args.camera))
 
-    prev_flag  = False
+    prev_flag = False
+
     t0, frames = time.time(), 0
 
     frame_counter = 0
     human_present = False
     vis = None
+
+    last_human_send = 0
 
     while True:
         ret, frame = cap.read()
@@ -248,9 +251,14 @@ def main():
             vis = frame
 
         flag = 1 if human_present else 0
-        # Send human detection to Pi
-        if human_present and not prev_flag:
+
+        now = time.time()
+
+        # Send heartbeat every 0.5 seconds while a human is visible
+        if human_present and (now - last_human_send) >= 0.5:
+            print("[HUMAN] Heartbeat")
             send_human_detected()
+            last_human_send = now
 
         prev_flag = human_present
 

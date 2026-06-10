@@ -24,6 +24,7 @@ MAX_DRIVE_POWER = 1.0
 bark = False
 last_bark_time = 0
 first_bark_time = 0
+last_robot_bark_time = 0
 
 # Human detection
 human = False
@@ -1107,11 +1108,15 @@ def is_barking():
     return are_we_barking
 
 def is_human():
-    global human, first_human_time
-    are_we_seeing_a_human = time.time() - first_human_time < 1.0
+    global human
+    global last_human_time
+
+    are_we_seeing_a_human = (
+        time.time() - last_human_time < 1.0
+    )
+
     human = are_we_seeing_a_human
-    if human == False:
-        first_human_time = 0
+
     return are_we_seeing_a_human
 
 def main():
@@ -1191,13 +1196,20 @@ def main():
                 if key in (ord("q"), 27):
                     break
             if is_barking():
-                print("[MAIN] Bark command received from sp32") #TODO: Implement barking logic by receiving YOLO state here
+                print("[MAIN] Bark command received from sp32")
+
                 if is_human():
-                    print("[MAIN] Human detected, barking!")
-                    #TODO: Implement threat logic
-                    #TODO: Make it bark
-                    if autonomous_mode:
+                    print("[MAIN] Human detected")
+
+                    now = time.time()
+
+                    if (
+                        autonomous_mode and
+                        now - last_robot_bark_time >= 1.0 # Bark only once each second
+                    ):
+                        print("[MAIN] Barking!")
                         robot.bark()
+                        last_robot_bark_time = now
 
     except KeyboardInterrupt:
         print("\n[MAIN] Ctrl+C detected.")
