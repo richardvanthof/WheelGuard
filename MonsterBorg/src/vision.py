@@ -24,6 +24,11 @@ bark = False
 last_bark_time = 0
 first_bark_time = 0
 
+# Human detection
+human = False
+last_human_time = 0
+first_human_time = 0
+
 API_KEY = "supersecret"
 
 # Control Mode
@@ -35,6 +40,11 @@ class BarkHandler(BaseHTTPRequestHandler):
         global bark
         global last_bark_time
         global first_bark_time
+
+        global human
+        global first_human_time
+        global last_human_time
+
         global autonomous_mode
 
         if self.headers.get("X-API-Key") != API_KEY:
@@ -50,6 +60,15 @@ class BarkHandler(BaseHTTPRequestHandler):
             if first_bark_time == 0:
                 first_bark_time = last_bark_time
 
+            self.send_response(200)
+            self.end_headers()
+            return
+        
+        if self.path == "/human":
+            human = True
+            last_human_time = time.time()
+            if first_human_time == 0:
+                first_human_time = last_human_time
             self.send_response(200)
             self.end_headers()
             return
@@ -87,7 +106,7 @@ class BarkHandler(BaseHTTPRequestHandler):
 
 def is_autonomous_mode():
     return autonomous_mode
-
+    
 def start_bark_server():
     server = HTTPServer(("0.0.0.0", 8221), BarkHandler)
     print("[BARK] Listening on :8221")
@@ -1078,6 +1097,14 @@ def is_barking():
         first_bark_time = 0
     return are_we_barking
 
+def is_human():
+    global human, first_human_time
+    are_we_seeing_a_human = time.time() - first_human_time < 1.0
+    human = are_we_seeing_a_human
+    if human == False:
+        first_human_time = 0
+    return are_we_seeing_a_human
+
 def main():
     threading.Thread(
         target=start_bark_server,
@@ -1153,6 +1180,12 @@ def main():
                     break
             if is_barking():
                 print("[MAIN] Bark command received from sp32") #TODO: Implement barking logic by receiving YOLO state here
+                if is_human():
+                    print("[MAIN] Human detected, barking!")
+                    #TODO: Implement threat logic
+                    #TODO: Make it bark
+                    if autonomous_mode:
+                        robot.bark()
 
     except KeyboardInterrupt:
         print("\n[MAIN] Ctrl+C detected.")
