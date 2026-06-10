@@ -1120,6 +1120,8 @@ def is_human():
     return are_we_seeing_a_human
 
 def main():
+    global last_robot_bark_time
+    
     threading.Thread(
         target=start_bark_server,
         daemon=True
