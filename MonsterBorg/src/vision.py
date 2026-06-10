@@ -10,13 +10,14 @@ from wheelguard_api import MonsterBorgClient
 import socket
 import threading
 import json
+from pid import PIDController
 
 import cv2
 import numpy as np
 
 # Toggle camera initialization
 ENABLE_CAMERA = False
-MIN_DRIVE_POWER = 0.7
+MIN_DRIVE_POWER = 0.8
 MAX_DRIVE_POWER = 1.0
 
 # Barking
@@ -112,10 +113,14 @@ def start_bark_server():
     print("[BARK] Listening on :8221")
     server.serve_forever()
 
-robot = MonsterBorgClient(
-    host="192.168.4.1",
-    api_key="supersecret"
-)
+try:
+    robot = MonsterBorgClient(
+        host="192.168.4.1",
+        api_key="supersecret"
+    )
+except Exception as e:
+    print(f"Robot unavailable: {e}")
+    robot = None
 
 @dataclass
 class Detection:
@@ -225,6 +230,7 @@ class Challenge2Vision:
         self.status = "FOLLOW"
         self.scan_duration = scan_duration
         self.scan_start = time.perf_counter()
+        
 
         # Background model used later to detect newly moving objects
         self.background_acc = None
@@ -690,9 +696,20 @@ class Challenge2Vision:
 
         x, y, w, h = cv2.boundingRect(pts)
 
+        marker_area = cv2.contourArea(pts)
+
+        print(
+            f"[ARUCO] bbox={w*h} contour={marker_area:.0f}"
+        )
+
         cv2.circle(debug, (cx, cy), 5, (0, 0, 255), -1)
 
         self.lost_frames = 0
+
+        print(
+            f"[ARUCO] area={marker_area:.0f} "
+            f"ratio={marker_area/(W*H):.4f}"
+        )
 
         return self._output_from_bbox(
             debug,
@@ -704,70 +721,7 @@ class Challenge2Vision:
             h,
             confidence=1.0,
             status=f"ARUCO {self.target_id}",
-        )
-
-    def _follow(self, frame):
-        """Track the locked target using its learned color mask.
-
-        If the target disappears briefly, the function coasts using the last
-        known box for a few frames before reporting LOST.
-        """
-        debug = frame.copy()
-        mask = self._target_color_mask(frame)
-
-        H, W = frame.shape[:2]
-
-        # Convert color blobs into candidate boxes and choose the best match
-        candidates = self._bbox_candidates_from_mask(frame, mask, max_area_ratio=0.85)
-        best = self._choose_follow_candidate(candidates, W, H)
-
-        if best is None:
-            self.lost_frames += 1
-
-            # Briefly reuse the last known box to avoid flickering on missed frames
-            if self.last_bbox is not None and self.lost_frames <= self.lost_tolerance_frames:
-                x, y, w, h = self.last_bbox
-
-                cv2.putText(
-                    debug,
-                    f"FOLLOW coast {self.lost_frames}/{self.lost_tolerance_frames}",
-                    (10, 25),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 255),
-                    2,
-                )
-
-                return self._output_from_bbox(
-                    debug,
-                    mask,
-                    frame.shape,
-                    x,
-                    y,
-                    w,
-                    h,
-                    confidence=0.25,
-                    status="FOLLOW_COAST",
-                )
-
-            return self._lost_output(debug, mask)
-
-        x, y, w, h, area = best
-
-        # Refresh tracking memory once a valid candidate is found
-        self.last_bbox = (x, y, w, h)
-        self.lost_frames = 0
-
-        return self._output_from_bbox(
-            debug,
-            mask,
-            frame.shape,
-            x,
-            y,
-            w,
-            h,
-            confidence=0.8,
-            status="FOLLOW",
+            actual_area=marker_area,
         )
 
     def _choose_follow_candidate(self, candidates, W, H):
@@ -815,7 +769,19 @@ class Challenge2Vision:
 
         return best
 
-    def _output_from_bbox(self, debug, mask, frame_shape, x, y, w, h, confidence, status):
+    def _output_from_bbox(
+        self,
+        debug,
+        mask,
+        frame_shape,
+        x,
+        y,
+        w,
+        h,
+        confidence,
+        status,
+        actual_area=None
+    ):
         """Convert a target box into normalized control errors and debug output.
 
         error_x and error_y are normalized to roughly [-1, 1], and area_ratio
@@ -831,7 +797,10 @@ class Challenge2Vision:
         error_x = (cx - W / 2) / (W / 2)
         error_y = (cy - H / 2) / (H / 2)
 
-        area_ratio = (w * h) / float(W * H)
+        if actual_area is None:
+            area_ratio = (w * h) / float(W * H)
+        else:
+            area_ratio = actual_area / float(W * H)
         
         # Smooth control signals to reduce jitter in the robot response
         self.smooth_error_x = (
@@ -915,8 +884,8 @@ class RobotController:
         max_speed=22,
         min_speed=3,
         k_linear=450.0,
-        turn_power=7,
-        search_power=7,
+        turn_power=8,
+        search_power=8,
         search_turn_duration=0.25,
         search_wait_duration=0.65,
     ):
@@ -949,6 +918,22 @@ class RobotController:
         self.last_seen_x = 0.0
         self.last_seen_y = 0.0
 
+        self.steer_pid = PIDController(
+            Kp=1.5,
+            Ki=0.0,
+            Kd=0.15,
+            setpoint=0.0,
+        )
+
+        self.distance_pid = PIDController(
+            Kp=4.0,
+            Ki=0.0,
+            Kd=0.2,
+            setpoint=self.target_area_ratio,
+        )
+
+        self.last_update = time.perf_counter()
+
     def stop(self):
         robot.stop()
 
@@ -958,8 +943,8 @@ class RobotController:
         speed = min(1.0, p / 10.0)
 
         robot.drive(
-            -speed,
-            speed
+            speed,
+            -speed
         )
 
     def _turn_right(self, power=None):
@@ -968,8 +953,8 @@ class RobotController:
         speed = min(1.0, p / 10.0)
 
         robot.drive(
-            speed,
-            -speed
+            -speed,
+            speed
         )
 
     def _forward(self, power):
@@ -1025,49 +1010,73 @@ class RobotController:
         self._search_step()
 
     def _follow(self, det):
-        """Center the target first, then adjust distance from target area."""
-        # Turn in place until the target is close enough to the image center
-        if det.error_x < -self.center_tolerance:
-            self._turn_left(self.turn_power)
-            return
 
-        if det.error_x > self.center_tolerance:
-            self._turn_right(self.turn_power)
-            return
+        now = time.perf_counter()
+        dt = now - self.last_update
+        self.last_update = now
 
-        # Use apparent target size as a distance estimate
-        area_error = self.target_area_ratio - det.area_ratio
-        print(
-            f"[CONTROL] target={self.target_area_ratio:.4f}, "
-            f"smooth_area={det.area_ratio:.4f}, "
-            f"area_error={area_error:.4f}"
+        if dt <= 0:
+            dt = 0.01
+
+        steering = self.steer_pid.update(
+            -det.error_x,
+            dt
         )
 
-        if abs(area_error) <= self.area_tolerance:
-            self.area_move_count = 0
-            self.stop()
-            return
+        forward = self.distance_pid.update(
+            det.area_ratio,
+            dt
+        )
+        distance_error = self.target_area_ratio - det.area_ratio
 
-        # Require repeated distance errors before moving to suppress jitter
-        self.area_move_count += 1
+        distance_ratio = (
+            self.target_area_ratio / max(det.area_ratio, 1e-6)
+        )
 
-        if self.area_move_count < self.required_area_count:
-            self.stop()
-            return
+        print(
+            f"[DIST] "
+            f"target={self.target_area_ratio:.4f} "
+            f"current={det.area_ratio:.4f} "
+            f"error={distance_error:.4f} "
+            f"ratio={distance_ratio:.2f}x"
+        )
 
-        raw_speed = abs(self.k_linear * area_error)
-        speed = int(max(self.min_speed, min(self.max_speed, raw_speed)))
+        left = forward - steering
+        right = forward + steering
 
-        if area_error > 0:
-            print("[CONTROL] too far -> forward")
-            self._forward(speed)
-        else:
-            print("[CONTROL] too close -> backward")
-            self._backward(speed)
+        max_mag = max(abs(left), abs(right), 1.0)
+
+        left /= max_mag
+        right /= max_mag
+
+        left = max(-1.0, min(1.0, left))
+        right = max(-1.0, min(1.0, right))
+
+
+        print(
+            f"[PID] area={det.area_ratio:.3f} "
+            f"err_x={det.error_x:.3f} "
+            f"fwd={forward:.3f} "
+            f"steer={steering:.3f} "
+            f"L={left:.3f} "
+            f"R={right:.3f}"
+        )
+
+        print(
+            f"[PID-DIST] "
+            f"input={det.area_ratio:.4f} "
+            f"setpoint={self.target_area_ratio:.4f} "
+            f"output={forward:.3f}"
+        )
+
+        robot.drive(left, right)
 
     def _search_step(self):
         """Run a turn-and-wait search pattern after the target is lost."""
         now = time.perf_counter()
+
+        self.steer_pid.reset()
+        self.distance_pid.reset()
 
         if self.search_phase == "TURN":
             if self.last_seen_left:
@@ -1117,7 +1126,7 @@ def main():
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--scan", type=float, default=12.0)
-    parser.add_argument("--target-area", type=float, default=0.045)
+    parser.add_argument("--target-area", type=float, default=0.15)
 
     args = parser.parse_args()
 
@@ -1149,8 +1158,8 @@ def main():
         target_area_ratio=args.target_area,
         center_tolerance=0.30,
         area_tolerance=0.05,
-        turn_power=7,
-        search_power=7,
+        turn_power=8,
+        search_power=8,
         min_speed=5,
         max_speed=20,
         k_linear=600,
@@ -1159,6 +1168,9 @@ def main():
     print("[MAIN] Challenge 2 started.")
     print("[MAIN] Robot stays stopped during SCAN and LOCK.")
     print("[MAIN] Press q or ESC to quit if display is enabled.")
+
+    print("[TEST] Sending stop command")
+    #robot.stop() #TODO: Debug print
 
     try:
         while True:

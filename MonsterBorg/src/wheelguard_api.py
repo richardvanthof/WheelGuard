@@ -20,22 +20,39 @@ class MonsterBorgClient(object):
     # =====================================================
 
     def drive(self, left, right):
+
         print(
-            f"drive {left:.2f} {right:.2f} {time.time():.3f}"
+            f"[DRIVE] "
+            f"left={left:.3f} "
+            f"right={right:.3f}"
         )
 
-        return requests.post(
+        try:
 
-            self.base_url + "/drive",
+            response = requests.post(
+                self.base_url + "/drive",
+                headers=self.headers,
+                json={
+                    "left": left,
+                    "right": right
+                },
+                timeout=2
+            )
 
-            headers=self.headers,
+            print(
+                f"[DRIVE] HTTP {response.status_code}"
+            )
 
-            json={
-                "left": left,
-                "right": right
-            }
-        )
+            return response
 
+        except Exception as e:
+
+            print(
+                f"[DRIVE] FAILED: {e}"
+            )
+
+            raise
+        
     # =====================================================
     # Timed Drive Primitive
     # =====================================================
@@ -110,8 +127,8 @@ class MonsterBorgClient(object):
              duration):
 
         self.drive_for(
-            -abs(left_power),
-            abs(right_power),
+            abs(left_power),
+            -abs(right_power),
             duration
         )
 
@@ -121,8 +138,8 @@ class MonsterBorgClient(object):
               duration):
 
         self.drive_for(
-            abs(left_power),
-            -abs(right_power),
+            -abs(left_power),
+            abs(right_power),
             duration
         )
 
