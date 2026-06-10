@@ -687,6 +687,11 @@ class Challenge2Vision:
 
         self.lost_frames = 0
 
+        print(
+            f"[ARUCO] area={marker_area:.0f} "
+            f"ratio={marker_area/(W*H):.4f}"
+        )
+
         return self._output_from_bbox(
             debug,
             np.zeros((H, W), dtype=np.uint8),
@@ -919,8 +924,8 @@ class RobotController:
         speed = min(1.0, p / 10.0)
 
         robot.drive(
-            -speed,
-            speed
+            speed,
+            -speed
         )
 
     def _turn_right(self, power=None):
@@ -929,8 +934,8 @@ class RobotController:
         speed = min(1.0, p / 10.0)
 
         robot.drive(
-            speed,
-            -speed
+            -speed,
+            speed
         )
 
     def _forward(self, power):
@@ -995,7 +1000,7 @@ class RobotController:
             dt = 0.01
 
         steering = self.steer_pid.update(
-            det.error_x,
+            -det.error_x,
             dt
         )
 
@@ -1094,14 +1099,14 @@ def main():
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--scan", type=float, default=12.0)
-    parser.add_argument("--target-area", type=float, default=0.045)
+    parser.add_argument("--target-area", type=float, default=0.15)
 
     args = parser.parse_args()
 
     idx = find_laptop_camera()
     # Open the selected camera source
-    #camera = cv2.VideoCapture(idx, cv2.CAP_V4L2) #For Linux
-    camera = cv2.VideoCapture(0, cv2.CAP_DSHOW) # For Windows
+    camera = cv2.VideoCapture(idx, cv2.CAP_V4L2) #For Linux
+    #camera = cv2.VideoCapture(0, cv2.CAP_DSHOW) # For Windows
 
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
@@ -1138,7 +1143,7 @@ def main():
     print("[MAIN] Press q or ESC to quit if display is enabled.")
 
     print("[TEST] Sending stop command")
-    robot.stop() #TODO: Debug print
+    #robot.stop() #TODO: Debug print
 
     try:
         while True:

@@ -127,8 +127,8 @@ class MonsterBorgClient(object):
              duration):
 
         self.drive_for(
-            -abs(left_power),
-            abs(right_power),
+            abs(left_power),
+            -abs(right_power),
             duration
         )
 
@@ -138,8 +138,8 @@ class MonsterBorgClient(object):
               duration):
 
         self.drive_for(
-            abs(left_power),
-            -abs(right_power),
+            -abs(left_power),
+            abs(right_power),
             duration
         )
 
