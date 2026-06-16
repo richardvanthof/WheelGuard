@@ -6,6 +6,22 @@ Robot that deters people from touching someone elses wheelchair.
 - Docker
 - [Gazebo Harmonic](https://gazebosim.org/docs/harmonic/install/) -->
 
+# Hardware Requirements
+
+- MonsterBorg running python3
+- Jetson Nano with CSI camera running python 3.6 on system
+- Raspberry Pi 4 or 5
+- Speaker with an analog cable
+- USB RGB Camera
+
+# Software Requirements
+
+- Download all relevant system packages on each system using their respective requirements.txt or manually install prompted system packages when try to run the system
+- Set up a hotspot on the MonsterBorg
+- Set up network according to specifications in the report
+- Deploy all respective software (listener on the monsterborg, vision on the raspberry, human_detection_yolo on the Jetson) alongside the API on the raspberry and launch all of these, or (easier) set them all as autostart services when network comes online
+- Run all
+
 # Monsterbord steering + AR tag detection
 ## Get started
 
