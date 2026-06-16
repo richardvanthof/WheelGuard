@@ -4,13 +4,26 @@ sys.path.append("/home/pi/monsterborg")
 from flask import Flask, request, jsonify, send_file
 from waitress import serve
 
-import ThunderBorg
 
 import threading
 import time
 import os
 
 from functools import wraps
+
+# detect Thunderborg
+try:
+    global TB
+    import ThunderBorg
+    TB = ThunderBorg.ThunderBorg()
+    TB.Init()
+    print("[INFO] ThunderBorg initialized successfully")
+    
+except Exception as e:
+    print("[ERROR] ThunderBorg import failed: {}".format(e))
+    print("[WARNING] Running in simulation mode without ThunderBorg. \n Incomming requests will be logged but not executed.")
+    TB = None
+
 
 # =========================================================
 # Configuration
@@ -19,7 +32,7 @@ from functools import wraps
 CURRENT_MODE = 1
 DEFAULT_POWER = 0.5
 
-HOST = "0.0.0.0"
+HOST = os.getenv("ROBOT_HOST", "0.0.0.0")
 PORT = 8443
 
 API_KEY = os.getenv("ROBOT_API_KEY")
@@ -40,18 +53,6 @@ MIN_POWER = -1.0
 # =========================================================
 
 app = Flask(__name__)
-
-# =========================================================
-# ThunderBorg Init
-# =========================================================
-
-TB = ThunderBorg.ThunderBorg()
-TB.Init()
-
-if not TB.foundChip:
-    raise RuntimeError("ThunderBorg not detected")
-
-TB.MotorsOff()
 
 # =========================================================
 # Global State
@@ -104,8 +105,9 @@ def touch_watchdog():
 def emergency_stop():
 
     try:
-        TB.MotorsOff()
-
+        if (TB is not None):
+            TB.MotorsOff()
+            
     except Exception as e:
         print("[ERROR] Emergency stop failed: {}".format(e))
 
@@ -226,13 +228,13 @@ def drive():
         }), 400
 
     try:
+        if(TB is not None):
+            print("[INFO] Setting motors")
 
-        print("[INFO] Setting motors")
+            TB.SetMotor1(left)
+            TB.SetMotor2(right)
 
-        TB.SetMotor1(left)
-        TB.SetMotor2(right)
-
-        print("[INFO] Motors updated")
+            print("[INFO] Motors updated")
 
     except Exception as e:
 
