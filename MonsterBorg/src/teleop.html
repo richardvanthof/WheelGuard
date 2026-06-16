@@ -55,6 +55,43 @@
             margin-top: 20px;
         }
 
+        .main-container {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: flex-start;
+
+            gap: 30px;
+
+            flex-wrap: wrap;
+        }
+
+        .video-panel {
+
+            background: rgba(20,20,20,0.7);
+
+            padding: 20px;
+
+            border-radius: 20px;
+
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+
+            margin-top: 20px;
+        }
+
+        .video-stream {
+
+            width: 640px;
+
+            max-width: 90vw;
+
+            border-radius: 15px;
+
+            border: 3px solid #444;
+        }
+
         .row {
 
             display: flex;
@@ -95,18 +132,17 @@
 
             background: #666;
         }
+        button:disabled {
+            opacity: 0.4;
 
-        .stop {
+            cursor: not-allowed;
 
-            background: #b22222;
+            transform: none;
         }
 
-        .option-btn {
+        .bark {
 
-            width: 160px;
-            height: 70px;
-
-            font-size: 20px;
+            background: #b22222;
         }
 
         .status {
@@ -138,12 +174,6 @@
 
                 font-size: 24px;
             }
-
-            .option-btn {
-
-                width: 120px;
-                height: 60px;
-            }
         }
 
     </style>
@@ -155,7 +185,18 @@
 
     <h1>MonsterBorg Teleop</h1>
 
-    <div class="panel">
+    <div class="main-container">
+
+        <div class="video-panel">
+
+            <img
+                src="/video_feed"
+                class="video-stream"
+            >
+
+        </div>
+
+        <div class="panel">
 
         <div class="slider-container">
 
@@ -180,7 +221,7 @@
 
         <div class="row">
             <button id="left">A</button>
-            <button class="stop" id="stop">STOP</button>
+            <button class="bark" id="bark">BARK</button>
             <button id="right">D</button>
         </div>
 
@@ -190,26 +231,38 @@
 
         <div style="margin-top: 30px;">
 
-            <button class="option-btn"
-                onclick="setOption(1)">
-                Option 1
-            </button>
+        <button
+            class="option-btn"
+            id="modeToggle"
+            onclick="toggleControlMode()">
 
-            <button class="option-btn"
-                onclick="setOption(2)">
-                Option 2
-            </button>
+            Manual Control
 
-            <button class="option-btn"
-                onclick="setOption(3)">
-                Option 3
-            </button>
+        </button>
 
-        </div>
+        <button
+            class="option-btn"
+            onclick="setOption(2)">
+
+            Option 2
+
+        </button>
+
+        <button
+            class="option-btn"
+            onclick="setOption(3)">
+
+            Option 3
+
+        </button>
+
+    </div>
 
         <div class="status" id="status">
             Ready
         </div>
+
+    </div>
 
     </div>
 
@@ -220,6 +273,7 @@
 const API_KEY = "supersecret";
 
 let interval = null;
+let controlMode = "manual";
 
 const statusText = document.getElementById("status");
 
@@ -237,6 +291,82 @@ powerSlider.addEventListener("input", function() {
 function getPower() {
 
     return parseFloat(powerSlider.value);
+}
+
+async function updateMode(enabled) {
+
+    try {
+
+        await fetch("/mode", {
+
+            method: "POST",
+
+            headers: {
+
+                "Content-Type": "application/json",
+                "X-API-Key": API_KEY
+            },
+
+            body: JSON.stringify({
+
+                autonomous: enabled
+            })
+        });
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
+
+function toggleControlMode() {
+
+    const modeButton =
+        document.getElementById("modeToggle");
+
+    const movementButtons = [
+
+        document.getElementById("forward"),
+        document.getElementById("backward"),
+        document.getElementById("left"),
+        document.getElementById("right")
+    ];
+
+    if (controlMode === "manual") {
+
+        controlMode = "camera";
+
+        movementButtons.forEach(function(btn) {
+
+            btn.disabled = true;
+        });
+
+        modeButton.innerText =
+            "Camera Control";
+
+        statusText.innerText =
+            "Camera Control Enabled";
+
+        updateMode(true);
+    }
+
+    else {
+
+        controlMode = "manual";
+
+        movementButtons.forEach(function(btn) {
+
+            btn.disabled = false;
+        });
+
+        modeButton.innerText =
+            "Manual Control";
+
+        statusText.innerText =
+            "Manual Control Enabled";
+        
+        updateMode(false);
+    }
 }
 
 async function sendDrive(left, right) {
@@ -284,6 +414,28 @@ async function stopRobot() {
         });
 
         statusText.innerText = "Stopped";
+
+    } catch (err) {
+
+        console.error(err);
+    }
+}
+
+async function bark() {
+
+    try {
+
+        await fetch("/bark", {
+
+            method: "POST",
+
+            headers: {
+
+                "X-API-Key": API_KEY
+            }
+        });
+
+        statusText.innerText = "BARK!";
 
     } catch (err) {
 
@@ -385,10 +537,13 @@ bindButton(
     "Turning Right"
 );
 
-document.getElementById("stop")
-.addEventListener("click", stopDriving);
+document.getElementById("bark")
+.addEventListener("click", bark);
 
 document.addEventListener("keydown", function(e) {
+
+    if (controlMode !== "manual")
+        return;
 
     if (interval)
         return;
@@ -417,29 +572,6 @@ document.addEventListener("keydown", function(e) {
 });
 
 document.addEventListener("keyup", stopDriving);
-
-async function setOption(option) {
-
-    try {
-
-        await fetch("/option/" + option, {
-
-            method: "POST",
-
-            headers: {
-
-                "X-API-Key": API_KEY
-            }
-        });
-
-        statusText.innerText =
-            "Option " + option + " Selected";
-
-    } catch (err) {
-
-        console.error(err);
-    }
-}
 
 </script>
 

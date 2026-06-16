@@ -20,11 +20,39 @@ class MonsterBorgClient(object):
     # =====================================================
 
     def drive(self, left, right):
-        return self._post(
-            self.base_url + "/drive",
-            json={"left": left, "right": right}
+
+        print(
+            f"[DRIVE] "
+            f"left={left:.3f} "
+            f"right={right:.3f}"
         )
 
+        try:
+
+            response = requests.post(
+                self.base_url + "/drive",
+                headers=self.headers,
+                json={
+                    "left": left,
+                    "right": right
+                },
+                timeout=2
+            )
+
+            print(
+                f"[DRIVE] HTTP {response.status_code}"
+            )
+
+            return response
+
+        except Exception as e:
+
+            print(
+                f"[DRIVE] FAILED: {e}"
+            )
+
+            raise
+        
     # =====================================================
     # Timed Drive Primitive
     # =====================================================
@@ -50,6 +78,20 @@ class MonsterBorgClient(object):
 
     def stop(self):
         return self._post(self.base_url + "/stop")
+
+    # =====================================================
+    # Bark
+    # =====================================================
+
+    def bark(self):
+
+        return requests.post(
+
+            self.base_url + "/bark",
+
+            headers=self.headers
+        )
+
 
     # =====================================================
     # Directional Helpers
@@ -83,8 +125,8 @@ class MonsterBorgClient(object):
              duration):
 
         self.drive_for(
-            -abs(left_power),
-            abs(right_power),
+            abs(left_power),
+            -abs(right_power),
             duration
         )
 
@@ -94,8 +136,8 @@ class MonsterBorgClient(object):
               duration):
 
         self.drive_for(
-            abs(left_power),
-            -abs(right_power),
+            -abs(left_power),
+            abs(right_power),
             duration
         )
 
