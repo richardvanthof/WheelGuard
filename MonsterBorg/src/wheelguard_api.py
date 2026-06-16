@@ -61,25 +61,23 @@ class MonsterBorgClient(object):
                   left,
                   right,
                   duration):
-
-        self.drive(left, right)
-
-        time.sleep(duration)
-
-        self.stop()
+        try:
+            self.drive(left, right)
+            time.sleep(duration)
+        finally:
+            # ensure we attempt to stop even if drive or sleep raised
+            try:
+                self.stop()
+            except Exception:
+                # swallow stop errors to not mask original exception
+                pass
 
     # =====================================================
     # Stop
     # =====================================================
 
     def stop(self):
-
-        return requests.post(
-
-            self.base_url + "/stop",
-
-            headers=self.headers
-        )
+        return self._post(self.base_url + "/stop")
 
     # =====================================================
     # Bark
@@ -169,11 +167,39 @@ class MonsterBorgClient(object):
     # =====================================================
 
     def option(self, option_id):
+        return self._post(self.base_url + "/option/{}".format(option_id))
 
-        return requests.post(
+    # =====================================================
+    # Internal helpers
+    # =====================================================
 
-            self.base_url +
-            "/option/{}".format(option_id),
+    def _post(self, url, **kwargs):
+        """Perform POST, handle API errors, and return JSON if possible.
 
-            headers=self.headers
-        )
+        Raises requests.HTTPError on non-2xx responses with additional info.
+        """
+        kwargs.setdefault("headers", self.headers)
+        try:
+            resp = requests.post(url, **kwargs)
+        except requests.RequestException as e:
+            raise
+
+        if not resp.ok:
+            # attempt to include body in error
+            content = None
+            try:
+                content = resp.json()
+            except Exception:
+                content = resp.text
+
+            http_err = requests.HTTPError(
+                "HTTP {} for {}: {}".format(resp.status_code, url, content)
+            )
+            http_err.response = resp
+            raise http_err
+
+        # return parsed json when possible, otherwise text
+        try:
+            return resp.json()
+        except Exception:
+            return resp.text

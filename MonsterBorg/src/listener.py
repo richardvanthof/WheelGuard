@@ -15,6 +15,20 @@ import requests
 
 from functools import wraps
 
+# detect Thunderborg
+try:
+    global TB
+    import ThunderBorg
+    TB = ThunderBorg.ThunderBorg()
+    TB.Init()
+    print("[INFO] ThunderBorg initialized successfully")
+    
+except Exception as e:
+    print("[ERROR] ThunderBorg import failed: {}".format(e))
+    print("[WARNING] Running in simulation mode without ThunderBorg. \n Incomming requests will be logged but not executed.")
+    TB = None
+
+
 # =========================================================
 # Configuration
 # =========================================================
@@ -25,7 +39,7 @@ video_lock = threading.Lock()
 CURRENT_MODE = 1
 DEFAULT_POWER = 0.5
 
-HOST = "0.0.0.0"
+HOST = os.getenv("ROBOT_HOST", "0.0.0.0")
 PORT = 8443
 
 API_KEY = os.getenv("ROBOT_API_KEY")
@@ -399,6 +413,8 @@ def drive():
         }), 400
 
     try:
+        if(TB is not None):
+            print("[INFO] Setting motors")
 
         #print("[INFO] Setting motors")
 
